@@ -2,6 +2,8 @@ import json
 import gspread
 import time
 import requests
+import datetime
+from datetime import date
 from oauth2client.service_account import ServiceAccountCredentials
 
 json_key = json.load(open('creds.json'))
@@ -13,17 +15,18 @@ credentials = ServiceAccountCredentials.from_json_keyfile_name('creds.json', sco
 file = gspread.authorize(credentials) # authenticate with Google
 sheet = file.open("Population Over Time").get_worksheet(1) # open sheet
 
-all_cells = sheet.range('A1:B2')
-print (all_cells)
-
+start = date(2019, 4, 10)
+now = datetime.datetime.now().date()
+print ("%d" % now.month)
+deltaOffset = (now - start).days
 position = 66
 for server in config['servers']:
     url = 'https://api.battlemetrics.com/servers/' + server['serverID']
-    r = requests.get(url + '/unique-player-history?start=2019-04-10T12%3A00%3A00Z&stop=2019-04-14T12%3A00%3A00Z', params=None)
-    counter = 1
+    r = requests.get(url + f'/unique-player-history?start={now.year:04d}-{now.month:02d}-{now.day-2:02d}T12%3A00%3A00Z&stop={now.year:04d}-{now.month:02d}-{now.day:02d}T12%3A00%3A00Z', params=None)
+    counter = deltaOffset - 1
     print (server['serverID'])
     try:
-        sheet.update_acell(str(chr(position)) + "1", server['serverID'])
+        sheet.update_acell(str(chr(position)) + "2", server['serverID'])
     except:
         print("RATE LIMIT EXCEEDED")
 
@@ -31,12 +34,12 @@ for server in config['servers']:
 
         if position == 66:
             try:
-                sheet.update_acell(str(chr(65)) + str(counter + 1), date['attributes']['timestamp'])
+                sheet.update_acell(str(chr(65)) + str(counter + 2), date['attributes']['timestamp'])
                 print(date['attributes']['timestamp'])
             except:
                 print("RATE LIMIT EXCEEDED")
         try:
-            sheet.update_acell(str(chr(position)) + str(counter + 1), date['attributes']['value'])
+            sheet.update_acell(str(chr(position)) + str(counter + 2), date['attributes']['value'])
             print(date['attributes']['value'])
         except:
             print("RATE LIMIT EXCEEDED")
